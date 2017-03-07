@@ -1,0 +1,5 @@
+connection info: sensorweb.ece.iastate.edu
+username: dec1713
+password: ISU@)!&
+which is (2017 + Shift)
+you can ssh into it.
