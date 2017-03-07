@@ -46,23 +46,23 @@ void setup() {
         Serial.begin(115200);
         Serial.println(F("FONA set baudrate"));
 
-         Serial.println(F("First trying 115200 baud"));
-         // start at 115200 baud
-         fonaSerial->begin(115200);
+        Serial.println(F("First trying 115200 baud"));
+        // start at 115200 baud
+        fonaSerial->begin(115200);
         fona.begin(*fonaSerial);
   
         // send the command to reset the baud rate to 4800
         fona.setBaudrate(4800); 
   
           // restart with 4800 baud
-          fonaSerial->begin(4800);
-          Serial.println(F("Initializing @ 4800 baud..."));
+        fonaSerial->begin(4800);
+        Serial.println(F("Initializing @ 4800 baud..."));
           
-          if (! fona.begin(*fonaSerial)) {
-                Serial.println(F("Couldn't find FONA"));
-                while(1);
-          }
-          Serial.println(F("FONA is OK"));
+        if (! fona.begin(*fonaSerial)) {
+              Serial.println(F("Couldn't find FONA"));
+              while(1);
+         }
+         Serial.println(F("FONA is OK"));
         
           // Print module IMEI number.
           char imei[15] = {0}; // MUST use a 16 character buffer for IMEI!
