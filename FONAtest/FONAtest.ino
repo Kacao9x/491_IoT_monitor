@@ -179,14 +179,11 @@ void loop() {
           Serial.print(F("FONA> "));
           /* print out the input character if while loop misses checking signal*/
           while (! Serial.available() ) {
-                if (fona.available()) {
+                if (fona.available())
                         Serial.write(fona.read());
-                 }
          }
-
           char command = Serial.read();
           Serial.println(command);
-
 
          switch (command) {
                 case '?': {
