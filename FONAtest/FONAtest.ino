@@ -54,13 +54,17 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 uint8_t type;
 
 void setup() {
+        /* wait until the Serial connection works*/
         while (!Serial);
         
           Serial.begin(115200);
-          Serial.println(F("FONA basic test"));
+          Serial.println(F("FONA basic test"));   
           Serial.println(F("Initializing....(May take 3 seconds)"));
+//        Serial.println("FONA initializing");
+//        Serial.println("May take 3seconds");        
         
           fonaSerial->begin(4800);
+          
           if (! fona.begin(*fonaSerial)) {
                 Serial.println(F("Couldn't find FONA"));
                 while (1);
@@ -177,11 +181,13 @@ void printMenu(void) {
 /* Main loop */
 void loop() {
           Serial.print(F("FONA> "));
-          /* print out the input character if while loop misses checking signal*/
+          /*CASE1:  IF Arduino stays idle, read the command received by FONA */
           while (! Serial.available() ) {
                 if (fona.available())
                         Serial.write(fona.read());
          }
+
+         /*CASE2: Arduino receives the command from the input */
           char command = Serial.read();
           Serial.println(command);
 
@@ -227,6 +233,13 @@ void loop() {
                         Serial.println(F("\n****"));
                         fona.HTTP_GET_end();
                 break;
+              }
+              /* case Z: auto-tool to post data to a particular website.*/
+              case "Z": {
+                        uint16_t statuscode;
+                        int16_t length;
+                        char url[80];
+                        char data[80];
               }
 
                 /***************** post data to website *******************/
