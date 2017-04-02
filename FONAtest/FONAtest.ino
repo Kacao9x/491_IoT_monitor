@@ -173,6 +173,7 @@ void printMenu(void) {
 //          }
   
           Serial.println(F("[S] create Serial passthru tunnel"));
+          Serial.println(F("[Z] Run the auto tool to post data to website"));
           Serial.println(F("-------------------------------------"));
           Serial.println(F(""));
 
@@ -232,14 +233,26 @@ void loop() {
                         }
                         Serial.println(F("\n****"));
                         fona.HTTP_GET_end();
-                break;
+                        break;
               }
               /* case Z: auto-tool to post data to a particular website.*/
-              case "Z": {
+              case 'Z': {
                         uint16_t statuscode;
                         int16_t length;
                         char url[80];
                         char data[80];
+
+                        flushSerial();  //clear the Serial buffer
+                        Serial.println("Auto-tool to post data to Websensor web");
+                        Serial.print(F("http://")); readline(url, 79);
+                        Serial.println(url);
+                        Serial.println("Data to post to the website");
+                        Serial.println(F("Data to post (e.g. \"foo\" or \"{\"simple\":\"json\"}\"):"));
+                        readline(data,79);
+                        Serial.println(data);
+
+                        Serial.println(F("****"));
+                        break;
               }
 
                 /***************** post data to website *******************/
@@ -253,10 +266,10 @@ void loop() {
                         flushSerial();
                         Serial.println(F("NOTE: in beta! Use simple websites to post!"));
                         Serial.println(F("URL to post (e.g. httpbin.org/post):"));
-                        Serial.print(F("http://")); readline(url, 79);
+                        Serial.print(F("http://")); readline(url, 79);          //FONA library to call mySerial->read() for reading the input character, timeout included
                         Serial.println(url);
                         Serial.println(F("Data to post (e.g. \"foo\" or \"{\"simple\":\"json\"}\"):"));
-                        readline(data, 79);
+                        readline(data, 79);                                                //the bit string limit with 80 elements
                         Serial.println(data);
                 
                         Serial.println(F("****"));
