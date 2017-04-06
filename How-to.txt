@@ -3,3 +3,15 @@ username: dec1713
 password: ISU@)!&
 which is (2017 + Shift)
 you can ssh into it.
+
+Ting: kacao@iastate.edu
+Pass: ChuVanAn123
+
+IMEI module 5320A: 014682000818392
+IMEI Blackberry: 355021033742195
+Ting plan: 8901260962171530725
+
+Test string
+{"NODE1":[{"moisture": "40%"},{"temp": "69.7F"}, {"time_1": "10:30PM"}]}
+
+

@@ -1,22 +1,3 @@
-/***************************************************
-  This is an example for our Adafruit FONA Cellular Module
-
-  Designed specifically to work with the Adafruit FONA
-  ----> http://www.adafruit.com/products/1946
-  ----> http://www.adafruit.com/products/1963
-  ----> http://www.adafruit.com/products/2468
-  ----> http://www.adafruit.com/products/2542
-
-  These cellular modules use TTL Serial to communicate, 2 pins are
-  required to interface
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing
-  products from Adafruit!
-
-  Written by Limor Fried/Ladyada for Adafruit Industries.
-  BSD license, all text above must be included in any redistribution
- ****************************************************/
-
 /*
   THIS CODE IS STILL IN PROGRESS!
 
@@ -38,14 +19,13 @@ char replybuffer[255];
 // (because softserial isnt supported) comment out the following three lines
 // and uncomment the HardwareSerial line
 #include <SoftwareSerial.h>
+
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
 
 // Hardware serial is also possible!
 //  HardwareSerial *fonaSerial = &Serial1;
 
-// Use this for FONA 800 and 808s
-//Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 // Use this one for FONA 3G
 Adafruit_FONA_3G fona = Adafruit_FONA_3G(FONA_RST);
 
@@ -218,11 +198,11 @@ void loop() {
         uint16_t statuscode;
         int16_t length;
         char url[80]="www.sensorweb.ece.iastate.edu";
-        char data[80];
+        char data[80]=  "{\"NODE1\":[{\"moisture\":\"" ;
         char c;
 
-        char moisture[15]="";
-        char temp[15]="";
+        char moisture[15]="40%";
+        char temp[15]="69.7F";
 /* CHANGE ME to retrieve the reading */
 //        while(!Serial.available());     //wait until we get the trigger from the receiver.
 //        c = Serial.read();
@@ -235,8 +215,8 @@ void loop() {
 
 /* clear the string before new readings */
         flushSerial();  //clear the Serial buffer
-        moisture = "40%";
-        temp = "69.7F";
+//        moisture = "40%";
+//        temp = "69.7F";
         
         
         Serial.println("Auto-tool to post data to Websensor web");
@@ -244,35 +224,36 @@ void loop() {
         Serial.println(url);
         Serial.println("Data to post to the website");
         Serial.println(F("Data to post (e.g. \"foo\" or \"{\"simple\":\"json\"}\"):"));
-        data = "{\"NODE1\":[{\"moisture\":\"" 
-            + moisture + "\"}, {\"temp\":\"" 
-            + temp + "\"}, {\"time\":\"" 
-            + time_1 + "\"}]}";
+//        data[80] = "{\"NODE1\":[{\"moisture\":\"" ;
+//            + moisture + "\"}, {\"temp\":\"" 
+//            + temp + "\"}, {\"time\":\"" 
+//            + time_1 + "\"}]}";
 
         Serial.println(data);
-
-        Serial.println(F("****"));
-        if (!fona.HTTP_POST_start(url, F("text/plain"), (uint8_t *) data, strlen(data), &statuscode, (uint16_t *)&length)) {
-          Serial.println("Failed!");
-          break;
-        }
-        while (length > 0) {
-          while (fona.available()) {
-            char c = fona.read();
-
-        #if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-                    loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
-                    UDR0 = c;
-        #else
-                    Serial.write(c);
-        #endif
-
-            length--;
-            if (! length) break;
-          }
-        }
+        /* relaying data POST to the server*/
+//        Serial.println(F("****"));
+//        if (!fona.HTTP_POST_start(url, F("text/plain"), (uint8_t *) data, strlen(data), &statuscode, (uint16_t *)&length)) {
+//          Serial.println("Failed!");
+//          break;
+//        }
+//        while (length > 0) {
+//          while (fona.available()) {
+//            char c = fona.read();
+//
+//        #if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
+//                    loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
+//                    UDR0 = c;
+//        #else
+//                    Serial.write(c);
+//        #endif
+//
+//            length--;
+//            if (! length) break;
+//          }
+//        }
+        
         Serial.println(F("\n****"));
-        fona.HTTP_POST_end();
+//        fona.HTTP_POST_end();
         break;
       }
 
@@ -293,11 +274,22 @@ void loop() {
         readline(data, 79);                                                //the bit string limit with 80 elements
         Serial.println(data);
 
-        Serial.println(F("****"));
-        if (!fona.HTTP_POST_start(url, F("text/plain"), (uint8_t *) data, strlen(data), &statuscode, (uint16_t *)&length)) {
-          Serial.println("Failed!");
-          break;
-        }
+
+        /* relaying data POST to the server*/
+//        Serial.println(F("****"));
+//        if (!fona.HTTP_POST_start(url, F("text/plain"), (uint8_t *) data, strlen(data), &statuscode, (uint16_t *)&length)) {
+//          Serial.println("Failed!");
+//          break;
+//        }
+        /* test a bit */
+       boolean xxx = fona.HTTP_POST_start(url, F("text/plain"), (uint8_t *) data, strlen(data), &statuscode, (uint16_t *)&length);
+       Serial.println(xxx);
+//        if (fona.HTTP_setup(url))  {
+//                Serial.println("http setup failed");
+//                break;
+//        }
+
+      //******************
         while (length > 0) {
           while (fona.available()) {
             char c = fona.read();
@@ -619,6 +611,9 @@ void loop() {
 
 
 /********************* helper methods ***************************/
+//unit16_t countchar(char *buff) {
+//        unit16_t 
+//}
 void flushSerial() {
       while (Serial.available())
         Serial.read();
