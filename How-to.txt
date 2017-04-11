@@ -15,3 +15,6 @@ Test string
 {"NODE1":[{"moisture": "40%"},{"temp": "69.7F"}, {"time_1": "10:30PM"}]}
 
 
+http://www.newswire.ca/news-releases/simcoms-3g-module-sim5320a-earns-certification-on-atts-nationwide-wireless-network-509086251.html
+
+SIMCOM support: http://m2msupport.net/m2msupport/simcom-sim5320a-hsdpa-3g-module/
