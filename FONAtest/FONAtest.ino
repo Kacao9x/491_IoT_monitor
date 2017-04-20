@@ -268,8 +268,10 @@ void loop() {
         flushSerial();
         Serial.println(F("NOTE: in beta! Use simple websites to post!"));
         Serial.println(F("URL to post (e.g. httpbin.org/post):"));
+        
         Serial.print(F("http://")); readline(url, 79);          //FONA library to call mySerial->read() for reading the input character, timeout included
         Serial.println(url);
+        
         Serial.println(F("Data to post (e.g. \"foo\" or \"{\"simple\":\"json\"}\"):"));
         readline(data, 79);                                                //the bit string limit with 80 elements
         Serial.println(data);
