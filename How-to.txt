@@ -18,3 +18,5 @@ Test string
 http://www.newswire.ca/news-releases/simcoms-3g-module-sim5320a-earns-certification-on-atts-nationwide-wireless-network-509086251.html
 
 SIMCOM support: http://m2msupport.net/m2msupport/simcom-sim5320a-hsdpa-3g-module/
+
+- AT&T APN: m2m.com.attz  (https://developer.att.com/technical-library/apns/apn-descriptions-and-characteristics)
