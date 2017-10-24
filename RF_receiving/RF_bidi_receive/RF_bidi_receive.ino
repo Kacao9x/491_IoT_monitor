@@ -16,7 +16,7 @@ struct package
   char  text[100] ="";
 };
 
-byte addresses[][6] = {"0"}; 
+byte addresses[][6] = {"00001", "00002"}; 
 
 typedef struct package Package;
 Package data;
@@ -47,8 +47,14 @@ void loop()
     while (myRadio.available())             // if RF still on
     {
       myRadio.read( &data, sizeof(data) );  //populate data into the Data structure
-      count++;
-      if (count == 5) continue;
+      //count++;
+      //Serial.print("count: ");
+      //Serial.print(count);
+      
+      if (count == 10) {
+        Serial.println("start sending feedback");
+        continue;
+      } 
     }
     /* start sending feedback to 1 */
     delay(5);
@@ -57,6 +63,7 @@ void loop()
     //data_send.text = "got new things";        cannot overwrite a string this way
     strncpy( data_send.text, "got a new thing", sizeof(data_send.text));
     myRadio.write(&data_send, sizeof(data_send));
+    
     Serial.print("\nPackage:");
     Serial.print(data.id);
     Serial.print("\n");
