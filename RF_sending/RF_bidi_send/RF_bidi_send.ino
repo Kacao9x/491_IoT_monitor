@@ -8,18 +8,19 @@ Speed options: RF24_250KBPS | RF24_1MBPS | RF24_2MBPS
 Power consump: PA_MIN | PA_LOW | PA_HIGH | PA_MAX
 */
 RF24 myRadio (7, 8);                        //ce,csn pin
-byte addresses[][6] = {"0"};
+byte addresses[][6] = {"00001", "00002"};
 
 /* create a data structure to store the data that needed to transmit */
 struct package
 {
   int id=1;
-  float temperature = 18.3;
-  char  text[100] = "Wake up signal";
+  float temperature = 0.0;
+  char  text[100] = "";
 };
 
 typedef struct package Package;
 Package data;
+Package data_received;
 
 void setup()
 {
@@ -38,21 +39,23 @@ void loop()
 {
   delay(5);
   myRadio.stopListening();
-  myRadio.write(&data, sizeof(data));       //populate the data structure
-
+  for (int8_t i = 0; i <5; i++) {
+    myRadio.write(&data, sizeof(data));       //populate the data structure
+  }
+  
   delay(5);
   myRadio.startListening();
   while(!myRadio.available());                //infinite loop waiting for feedback from node 2
-  myRadio.read( &data, sizeof(data) );        //read data package from node 2
-  
-  /* print out what we have sent*/
+  myRadio.read( &data_received, sizeof(data_received) );        //read data package from node 2
+  //if(data_received == "bingo") do smt;
+  /* print out and update data what we have sent*/
   Serial.print("\nPackage:");
   Serial.print(data.id);
   Serial.print("\n");
   Serial.println(data.temperature);
-  Serial.println(data.text);
+  Serial.println(data_received.text);
   data.id = data.id + 1;
-  data.temperature = data.temperature+0.1;
+  data.temperature = data.temperature+0.3;
   delay(1000);
 
 /* CALCULATE how long to transmit data package*/
