@@ -32,21 +32,30 @@ void setup()
   myRadio.setDataRate( RF24_250KBPS ) ;     //250kB lowest data transfer rate --> achieve better range
   myRadio.openWritingPipe( addresses[1]);   //open pipe to send data to node 2
   myRadio.openReadingPipe(1, addresses[0]); //open pipe to receive from node 1
-  delay(1000);
+  delay(100);
 }
 
 void loop()
 {
   delay(5);
   myRadio.stopListening();
-  for (int8_t i = 0; i <5; i++) {
-    myRadio.write(&data, sizeof(data));       //populate the data structure
+  myRadio.write(&data, sizeof(data));       //populate the data structure
+  if (data.id > 10) {
+    data.id = 0;
+    RF_listening();                         //start listening from node 2, sending hanging up.
   }
+  /*
+   * this is wrong because it take O(1) to send data
+  for (int8_t i = 0; i < 100; i++) {
+    myRadio.write(&data, sizeof(data));       //populate the data structure
+  }*/
   
   delay(5);
+  /*
   myRadio.startListening();
   while(!myRadio.available());                //infinite loop waiting for feedback from node 2
   myRadio.read( &data_received, sizeof(data_received) );        //read data package from node 2
+  */
   //if(data_received == "bingo") do smt;
   /* print out and update data what we have sent*/
   Serial.print("\nPackage:");
@@ -60,3 +69,18 @@ void loop()
 
 /* CALCULATE how long to transmit data package*/
 }
+
+void RF_listening() {
+  myRadio.startListening();
+  Serial.println("listening");
+  /*
+  if ( myRadio.available())
+  {
+    while( myRadio.available())
+    {
+      myRadio.read( &data_received, sizeof(data_received) );        //read data package from node 2
+    }
+  }*/
+  delay(1000);
+}
+
