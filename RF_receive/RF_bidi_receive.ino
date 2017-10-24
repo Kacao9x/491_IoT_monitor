@@ -29,10 +29,11 @@ void setup()
   myRadio.begin(); 
   myRadio.begin();  
   myRadio.setChannel(115);                  //Communication channel: 115 
-  myRadio.setPALevel(RF24_PA_MAX);          //Max power to enhance comm range
+  myRadio.setPALevel(RF24_PA_MIN);          //Max power to enhance comm range
   myRadio.setDataRate( RF24_250KBPS ) ;     //250kB lowest data transfer rate --> achieve better range
-  myRadio.openReadingPipe(1, addresses[0]); //open pipe to echo the data streaming to
-  myRadio.startListening();
+  myRadio.openReadingPipe(0, addresses[0]); //open pipe to read data from node 1
+  myRadio.openWritingPipe( addresses[1]);   //open pipe to send data to node 2
+  //myRadio.startListening();
 }
 
 
