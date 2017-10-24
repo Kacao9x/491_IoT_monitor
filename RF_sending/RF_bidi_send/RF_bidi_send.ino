@@ -8,7 +8,7 @@ Speed options: RF24_250KBPS | RF24_1MBPS | RF24_2MBPS
 Power consump: PA_MIN | PA_LOW | PA_HIGH | PA_MAX
 */
 RF24 myRadio (7, 8);                        //ce,csn pin
-byte addresses[][6] = {"1", "2"};
+byte addresses[][6] = {"0"};
 
 /* create a data structure to store the data that needed to transmit */
 struct package
