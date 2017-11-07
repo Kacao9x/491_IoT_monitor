@@ -4,8 +4,8 @@
 
 /* Variables for 2G connection*/
 SoftwareSerial client(2,3);             //2G network pin 2:Rx, pin 3: Tx
-String reading ="";                     //save the path (from the website) into string array
-int received_path[8];                   //save the path in int array
+char reading[16] ="[5 3 2 4 1]";                     //save the path (from the website) into string array
+int received_path[5] = {5,3,2,4,1};                   //save the path in int array
 
 /* Varable for radio communication*/
 /* set up communication pipe:
@@ -61,6 +61,14 @@ void setup() {
   //initSIM();
   //connectGPRS();
   //connectHTTP();                      //get the path and parse it to LEAF
+
+  //for debugging
+  //_convert_Str_to_IntArray(reading);
+  Serial.print("The array path is: ");
+  for(int8_t k=0; k < sizeof(received_path)-1; k++) {
+    Serial.print(received_path[k]);
+    Serial.print(" ");
+  }
 }
 
 /**
@@ -93,7 +101,45 @@ void serial_logger() {
   _clear_data_struct();                 //clear path
 
   /* after get the path, place it here*/
+  //received_path[8] = [5,3,4,2,1];
+//  for (int8_t j=0; j<sizeof(received_path); j++) {
+//    if(received_path[j] == 
+//  }
+  int c = int(Serial.read());
+    if ( c == '1'){      
+        My_Data.path[0] = 0;
+        My_Data.path[1] = 1;     
+      Serial.println(F("Calling node 1"));
+   }
 
+    else if ( c == '2'){ 
+        //path to 2
+        My_Data.path[0] = 0;
+        My_Data.path[1] = 1;
+        My_Data.path[2] = 2;   
+      Serial.println(F("Calling node 2"));
+   }
+
+       else if ( c == '3'){ 
+        //path to 3
+        My_Data.path[0] = 0;
+        My_Data.path[1] = 1;
+        My_Data.path[2] = 2;
+        My_Data.path[3] = 3;
+      Serial.println(F("Calling node 3"));
+   }
+        else if ( c == '4'){ 
+        //path to 4
+        My_Data.path[0] = 0;
+        My_Data.path[1] = 1;
+        My_Data.path[2] = 2;
+        My_Data.path[3] = 3;
+        My_Data.path[4] = 4;
+      Serial.println(F("Calling node 4"));
+   }
+     else{
+    return;
+   }
 
   /* ping the tartget LEAF in the path we got before */
   transmit(My_Data);
@@ -203,7 +249,7 @@ void connectHTTP()
   ShowSerialData();
 
 
-  client.println("AT+HTTPDATA=" + String(reading.length()) + ",100000");
+  client.println("AT+HTTPDATA=" + String(sizeof(reading)) + ",100000");
   delay(1000);
   ShowSerialData();
 
@@ -244,11 +290,14 @@ void ShowSerialData()
  */
 void _convert_Str_to_IntArray(String readingHold) {
   int8_t k = 0;
+  Serial.print("length of strig arr: ");
+  Serial.println(sizeof(readingHold));
   for (int8_t j=0; j<sizeof(readingHold); j++) {
-    if (isDigit(reading.charAt(j))) {
+    if (isDigit(reading[j])) {
       received_path[k] = readingHold[j] - '0';      //Should use Int() to cast?
-      //Serial.println(reading[j]);
+      //received_path[k] = byte(readingHold[j]);
       Serial.println(received_path[k]);
+      Serial.println(readingHold[j]);
       k++;
     }
   }
