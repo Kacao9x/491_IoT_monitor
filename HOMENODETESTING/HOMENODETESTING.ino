@@ -3,11 +3,11 @@
 SoftwareSerial client(2,3);
 
 
-String reading ="";
+//String reading ="";
 byte readingHold[46]; //this would hold the response of the AT+HTTPREAD  
 byte readingHold2[11]; //This contains only the data which is the path
 int a =0; //this would hold the value for byte
-//String reading="[5,3,2,4,1,6,8,0]";
+String reading="[5,3,2,4,1]";
 int parse_int[8]; //consider using dynamic array for optimal runtime
 
 
@@ -154,6 +154,15 @@ void ShowSerialData1() //this function would be used to store the character read
    }*/   
 }
 
+void PostData()
+{
+  while(client.available()) {
+    //POST
+    for(int8_t i =0; i<sizeof(parse_int); i++) {
+      client.write(parse_int[i]);
+    }
+  }
+}
 void extractArray(String reading) {
   int8_t k = 0;
   for (int8_t j=0; j<reading.length(); j++) {
