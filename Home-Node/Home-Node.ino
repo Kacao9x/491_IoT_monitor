@@ -59,16 +59,18 @@ void setup() {
     radio.startListening();
     
   //initSIM();
-  //connectGPRS();
-  //connectHTTP();                      //get the path and parse it to LEAF
+  connectGPRS();
+  connectHTTP();                      //get the path and parse it to LEAF
 
   //for debugging
   //_convert_Str_to_IntArray(reading);
   Serial.print("The array path is: ");
-  for(int8_t k=0; k < sizeof(received_path)-1; k++) {
+  for(int8_t k=0; k < 6; k++) {
     Serial.print(received_path[k]);
     Serial.print(" ");
   }
+
+  Serial.println("Finish setup. Running loop()");
 }
 
 /**
@@ -244,7 +246,7 @@ void connectHTTP()
   client.println("AT+HTTPPARA=\"URL\",\"http://posttestserver.com/post.php?dir=Homenodetestiastate\"");//Public server IP address
   ShowSerialData();
 
-  client.println("AT+HTTPPARA=\"CONTENT\",\"application/jason");
+  client.println("AT+HTTPPARA=\"CONTENT\",\"application/json");
   delay(1000);
   ShowSerialData();
 
@@ -259,11 +261,11 @@ void connectHTTP()
 
   client.println("AT+HTTPREAD");
   delay(1000);
-  //ShowSerialData();
+  ShowSerialData();
 
   client.println("AT+HTTPTERM");
   delay(1000);
-  //ShowSerialData();
+  ShowSerialData();
 }
 
 /**
@@ -290,14 +292,13 @@ void ShowSerialData()
  */
 void _convert_Str_to_IntArray(String readingHold) {
   int8_t k = 0;
-  Serial.print("length of strig arr: ");
-  Serial.println(sizeof(readingHold));
+
   for (int8_t j=0; j<sizeof(readingHold); j++) {
     if (isDigit(reading[j])) {
       received_path[k] = readingHold[j] - '0';      //Should use Int() to cast?
       //received_path[k] = byte(readingHold[j]);
       Serial.println(received_path[k]);
-      Serial.println(readingHold[j]);
+      //Serial.println(readingHold[j]);
       k++;
     }
   }
