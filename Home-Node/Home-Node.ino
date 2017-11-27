@@ -34,8 +34,8 @@ typedef struct {
   float sensor1;                        //value of sensor data
 }MsgData;
 
-  MsgData My_Data;                      //data stored in HOME node
-  MsgData Received_Data;                //data received from LEAF
+  MsgData My_Data;                      //HOME NODE data: contain the path
+  MsgData Received_Data;                //contain sensor values
 
 int TransAMOUNT=5;
 int DataTRANS=false;
@@ -228,42 +228,45 @@ void connectHTTP()
   client.println("AT+HTTPPARA=\"CID\",1");      //http://sensorweb.ece.iastate.edu/api/4/path
   delay(1000);
   ShowSerialData();
-  //this is a modification
   
+  //this is a modification to obtain path from api
   client.println("AT+HTTPPARA=\"URL\",\"http://sensorweb.ece.iastate.edu/api/4/path\"");//Public server IP address
   delay(1000);
   ShowSerialData();
 
-  client.println("AT+HTTPACTION=0");
+  client.println("AT+HTTPACTION=0");    //=0 (READ), =1 (POST)
   delay(1000);
   ShowSerialData();
- 
-  client.println("AT+HTTPREAD");  //in this line of code we are trying to store the sensor data
+
+  client.println("AT+HTTPREAD");  //Send a command to read the HTTP server response, run AT+HTTPACTION in prior
   delay(1000);
   ShowSerialData();              //this code is in progress
-  
-  
+  /* this function specifically extract only the path and not the other response retrieved from
+  HTTPREAD response
+  Reading and extracting the desired path from the api end here*/
+
+  /* make a post to the server with sensor value */
   client.println("AT+HTTPPARA=\"URL\",\"http://posttestserver.com/post.php?dir=Homenodetestiastate\"");//Public server IP address
   ShowSerialData();
 
-  client.println("AT+HTTPPARA=\"CONTENT\",\"application/json");
+  client.println("AT+HTTPPARA=\"CONTENT\",\"application/json"); //create the data structure in json format
   delay(1000);
   ShowSerialData();
 
 
-  client.println("AT+HTTPDATA=" + String(sizeof(reading)) + ",100000");
+  client.println("AT+HTTPDATA=" + String(sizeof(reading)) + ",100000"); //insert data into the json format
   delay(1000);
   ShowSerialData();
 
-  client.println("AT+HTTPACTION=1");
+  client.println("AT+HTTPACTION=1");    //=0 (READ), =1 (POST)
   delay(1000);
   ShowSerialData();
 
-  client.println("AT+HTTPREAD");
+  client.println("AT+HTTPREAD");        //Send a command to read the HTTP server response, run AT+HTTPACTION in prior
   delay(1000);
   ShowSerialData();
 
-  client.println("AT+HTTPTERM");
+  client.println("AT+HTTPTERM");        //terminate the HTTP
   delay(1000);
   ShowSerialData();
 }
