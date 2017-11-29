@@ -4,8 +4,8 @@
 
 /* Variables for 2G connection*/
 SoftwareSerial client(2,3);             //2G network pin 2:Rx, pin 3: Tx
-char reading[16] ="[5 3 2 4 1]";                     //save the path (from the website) into string array
-int received_path[5] = {5,3,2,4,1};                   //save the path in int array
+char reading[16] ="";                     //save the path (from the website) into string array
+char received_path[] = {5,3,2,4,1};                   //save the path in int array
 
 /* Varable for radio communication*/
 /* set up communication pipe:
@@ -59,13 +59,13 @@ void setup() {
     radio.startListening();
     
   //initSIM();
-  connectGPRS();
-  connectHTTP();                      //get the path and parse it to LEAF
+  //connectGPRS();
+  //connectHTTP();                      //get the path and parse it to LEAF
 
   //for debugging
   //_convert_Str_to_IntArray(reading);
   Serial.print("The array path is: ");
-  for(int8_t k=0; k < 6; k++) {
+  for(int8_t k=0; k < sizeof(received_path); k++) {
     Serial.print(received_path[k]);
     Serial.print(" ");
   }
@@ -107,7 +107,23 @@ void serial_logger() {
 //  for (int8_t j=0; j<sizeof(received_path); j++) {
 //    if(received_path[j] == 
 //  }
-  int c = int(Serial.read());
+  int _last_element = sizeof(received_path);
+  int c = received_path[_last_element - 2];
+
+  //Serial.print("value of last element is: ");
+  //Serial.println(c);
+  
+  for ( int8_t i =0; i<sizeof(received_path); i++ ) {
+    Serial.print("size of array: ");
+    Serial.println(sizeof(received_path)/sizeof(int));
+    Serial.print("value of element is: ");
+    Serial.println(received_path[i]);
+    My_Data.path[i] = received_path[i];
+    delay(100);
+  }
+
+  /*
+  //int c = int(Serial.read());
     if ( c == '1'){      
         My_Data.path[0] = 0;
         My_Data.path[1] = 1;     
@@ -141,17 +157,17 @@ void serial_logger() {
    }
      else{
     return;
-   }
+   } */
 
   /* ping the tartget LEAF in the path we got before */
-  transmit(My_Data);
+  //transmit(My_Data);
     /* wait 5s for the echo from LEAF nodes: timeout 5s*/
-    delay(20);
-    start_time=millis();
-      Serial.println("---Listening For Response---");
-      while(start_time+Timeout>millis()){
-        receive();
-      }
+    //delay(20);
+    //start_time=millis();
+      //Serial.println("---Listening For Response---");
+      //while(start_time+Timeout>millis()){
+      //  receive();
+      //}
   
 }
 
@@ -278,6 +294,11 @@ void connectHTTP()
 void ShowSerialData()
 {
   int8_t i = 0;               //index for reading array
+  //zero-out the path array
+  for (int8_t i=0; i<sizeof(reading); i++) {
+    reading[i] = 0;
+  }
+  
   while(client.available()!=0)
   {
     reading[i] = client.read();
