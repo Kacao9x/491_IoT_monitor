@@ -6,28 +6,28 @@ String reading = "";
 /* Variables for 2G connection */
 SoftwareSerial client_2G(7,8);             //2G network pin 7:Rx, pin 8: Tx, pin 9: power Up/Down for SW reset
 
+
 /* Variable for RF communication */
 void setup() {
-  power_cycle();
-  delay(5000);
   /* Set up 2G network here*/
   client_2G.begin(19200);                  //the GPRS baud rate
   Serial.begin(19200);                    // Serial monitor baud rate
   delay(500);
   connect_GPRS();
-  connectHTTP();
+  Submit_HTTP_request();
   
-  if( client_2G.available() )
-    Serial.print("Connected_setup");
-  else
-    Serial.print("NotConnected_setup");
+  if (client_2G.println("AT+CSQ"))
+      Serial.print("Connected_setup");
+//  if( client_2G.available() )
+//    Serial.print("Connected_setup");
+//  else
+//    Serial.print("NotConnected_setup");
   /* Set up RF radio reception here*/
 
   /* Run once to go end-to-end */
 }
 
 void loop() {
-
   /**
    * if 2G network available: wait for radio reception and perform duty
    * else: power cycle by SW reset (power_cycle)
@@ -38,7 +38,13 @@ void loop() {
       delay(1000);
       Serial.println(" POST something ");
 
-      connectHTTP();
+      //Submit_HTTP_request();
+      /* if null path, exit the condition*/
+      if (path = NULL) break;
+
+      MyData.path[i] = path[i];
+      transmit
+      
     }
   
   } else {  //perform power_cycle
@@ -46,7 +52,6 @@ void loop() {
     Serial.println(" Loop_no_Connected");
     delay(1000);
   }
-
 }
 
 void ShowSerialData() {
@@ -78,31 +83,33 @@ void power_cycle() {
 }
 
 void connect_GPRS() {
-  check_signal();
-  client_2G.println("AT+SAPBR=3,1,\"Contype\",\"GPRS\"");
+ client_2G.println("AT+CSQ");                                 //Check signal quality
+    delay(100);
+    ShowSerialData();
+
+  client_2G.println("AT+CGATT?");                             //Attach or Detach from GPRS Support
+    delay(100);
+    ShowSerialData();
+    
+  client_2G.println("AT+SAPBR=3,1,\"Contype\",\"GPRS\"");     //setting the SAPBR, the connection type is using gprs
     delay(1000);
     ShowSerialData();
 
-  client_2G.println("AT+SAPBR=3,1,\"APN\",\"TRACFONE-WFM\"");//APN
-    delay(1000);
+  client_2G.println("AT+SAPBR=3,1,\"APN\",\"TRACFONE-WFM\""); //setting the APN, Access point name string
+    delay(4000);
     ShowSerialData();
 
-  client_2G.println("AT+SAPBR=1,1");
-    delay(1000);
+  client_2G.println("AT+SAPBR=1,1");                          //setting the SAPBR
+    delay(2000);
     ShowSerialData();
   
-  client_2G.println("AT+SAPBR=2,1");
-    delay(1000);
-    ShowSerialData();
+//  client_2G.println("AT+SAPBR=2,1");
+//    delay(1000);
+//    ShowSerialData();
 }
 
 void Submit_HTTP_request() {
-  check_signal();
-//  mySerial.println("AT+CGATT?");    //attach GPRS 
-//    delay(100);
-//    ShowSerialData();
-    
-  client_2G.println("AT+HTTPINIT");
+  client_2G.println("AT+HTTPINIT");           //init the HTTP request
     delay(2000);
     ShowSerialData();
   
@@ -119,9 +126,11 @@ void Submit_HTTP_request() {
     delay(6000);
     ShowSerialData();
 
-  client_2G.println("AT+HTTPREAD");  //Send a command to read the HTTP server response, run AT+HTTPACTION in prior
+  client_2G.println("AT+HTTPREAD");       //Send a command to read the HTTP server response, run AT+HTTPACTION in prior
     delay(300);
-    ShowSerialData();              //this code is in progress
+    ShowSerialData();
+  client_2G.println("");
+    delay(100);         
 }
 
 
@@ -132,6 +141,10 @@ void Post_Http_request()
   Reading and extracting the desired path from the api end here*/
 
   /* make a post to the server with sensor value */
+  client_2G.println("AT+HTTPINIT");           //init the HTTP request
+    delay(2000);
+    ShowSerialData();
+  
   client_2G.println("AT+HTTPPARA=\"URL\",\"http://posttestserver.com/post.php?dir=Homenodetestiastate\"");//Public server IP address
     delay(1000);
     ShowSerialData();
@@ -149,18 +162,10 @@ void Post_Http_request()
     delay(1000);
     ShowSerialData();
 
-  client_2G.println("AT+HTTPREAD");        //Send a command to read the HTTP server response, run AT+HTTPACTION in prior
-    delay(1000);
-    ShowSerialData();
 
   client_2G.println("AT+HTTPTERM");        //terminate the HTTP
     delay(1000);
     ShowSerialData();
 }
 
-void check_signal()
-{
-  client_2G.println("AT+CSQ");
-  delay(100);
-  ShowSerialData();
-}
+
