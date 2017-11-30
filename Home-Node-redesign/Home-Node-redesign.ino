@@ -6,25 +6,73 @@ String reading = "";
 /* Variables for 2G connection */
 SoftwareSerial client_2G(7,8);             //2G network pin 7:Rx, pin 8: Tx, pin 9: power Up/Down for SW reset
 
-
 /* Variable for RF communication */
+RF24 radio(2,3);
+const uint64_t pipe = 0xE8E8F0F0E1LL; //channel to recieve
+byte addresses[][6] = {"1Node","2Node"};
+
+/* data structure for the tranmission */
+//unsigned long msg;
+const byte NodeID = 0;                      //Node ID for home station
+float NodeData = 0;
+const int Max_Nodes = 20;
+
+//char reading[] = {5,3,2,4,1};
+
+typedef struct {
+  byte ID; //Node ID number
+  byte path [Max_Nodes]; //The path to go down    //up to 256 differnt node names only a path of 31
+  byte Place_In_Path; //Where in the array are we
+  byte cmd; //go to sleep, other odd commands
+  bool return_flag;//Return to home node, go from ++ to --
+  float sensor1;
+}MsgData;
+
+  MsgData My_Data;
+  MsgData Received_Data;
+
+
+//Initializing the Data in Structs.
+//These can be altered Later by using Struct_name.Struct_access 
+
+int TransAMOUNT=5;
+int DataTRANS=false;
+int i;
+unsigned long Timeout=5000;
+int count=0;
+unsigned long start_time;
+bool old_Data=true;
+
+
 void setup() {
   /* Set up 2G network here*/
   client_2G.begin(19200);                  //the GPRS baud rate
   Serial.begin(19200);                    // Serial monitor baud rate
   delay(500);
+
+  /* Set up RF radio reception here*/
+  for( i=0; i<Max_Nodes; i++){
+      My_Data.path[i] = 0;
+    }
+     My_Data.return_flag=0;
+     My_Data.Place_In_Path=1;
+
+    My_Data.sensor1 = NodeData;
+    Serial.begin(9600);
+    radio.begin();
+    radio.setAutoAck(false);
+    radio.openReadingPipe(1,pipe);
+    radio.startListening();
+    
+  /* Run once to go end-to-end */
   connect_GPRS();
   Submit_HTTP_request();
-  
   if (client_2G.println("AT+CSQ"))
       Serial.print("Connected_setup");
 //  if( client_2G.available() )
 //    Serial.print("Connected_setup");
 //  else
 //    Serial.print("NotConnected_setup");
-  /* Set up RF radio reception here*/
-
-  /* Run once to go end-to-end */
 }
 
 void loop() {
@@ -40,10 +88,6 @@ void loop() {
 
       //Submit_HTTP_request();
       /* if null path, exit the condition*/
-      if (path = NULL) break;
-
-      MyData.path[i] = path[i];
-      transmit
       
     }
   
