@@ -2,9 +2,9 @@
 #include <SPI.h>
 #include "RF24.h"
 
-String reading = "";
+char reading[] = {5,3,2,4,1};               //change to dynamic array then?
 /* Variables for 2G connection */
-SoftwareSerial client_2G(7,8);             //2G network pin 7:Rx, pin 8: Tx, pin 9: power Up/Down for SW reset
+SoftwareSerial client_2G(7,8);             //2G network pin 7:Rx (CE), pin 8(CSN): Tx, pin 9: power Up/Down for SW reset
 
 /* Variable for RF communication */
 RF24 radio(2,3);
@@ -16,8 +16,6 @@ byte addresses[][6] = {"1Node","2Node"};
 const byte NodeID = 0;                      //Node ID for home station
 float NodeData = 0;
 const int Max_Nodes = 20;
-
-//char reading[] = {5,3,2,4,1};
 
 typedef struct {
   byte ID; //Node ID number
@@ -107,14 +105,35 @@ void loop() {
         //zero_out path
         Post_Http_request();
       } */
-      
-      
+      connect_GPRS();
+      memset(reading, 0, sizeof(reading));
+
+      /* fake reading */
+      for(i=1; i<6; i++) {
+        reading[i-1] = 0;
+      }
+      Submit_HTTP_request();
+      Serial.println("read the website");
+      /* Need to check the condition, cannot exit when reading =0 */
+      if(reading[0] == 0) {
+        continue;         //never
+      }
+      else{
+        serial_logger();
+      }
+
+      /*POST data to website*/
+      Post_Http_request();
+      //if (flag == 1) continue; else ....
     }
-  
+    return;
   } else {  //perform power_cycle
-    //power_cycle();
-    Serial.println(" Loop_no_Connected");
+    //If no power at the beginning, works fine. But if mannually turn off, never back on???
+    Serial.println(" Loop_no_Connected - power reset");
+    power_cycle();
     delay(1000);
+    //connect_GPRS();
+    Serial.println("No need enable GPRS");                //Run once
   }
 }
 
@@ -227,7 +246,7 @@ void Post_Http_request()
     ShowSerialData();
 
 
-  client_2G.println("AT+HTTPTERM");        //terminate the HTTP
+  client_2G.println("AT+HTTPTERM");        //terminate the HTTP, cause POWER RESET ----------------- CAUTION
     delay(1000);
     ShowSerialData();
 }
@@ -237,7 +256,7 @@ void _CastString_to_Int_Array() {
   return;
 }
 void serial_logger(){
-
+    Serial.println("enter serial_logger");
     //clear path
     _clear_data_struct();
      My_Data.Place_In_Path=1;         //CHANGE ME ---------------------??
