@@ -1,6 +1,7 @@
 #include<SoftwareSerial.h>
 #include <SPI.h>
 #include "RF24.h"
+#include "LowPower.h"
 
 char reading[] = {5,3,2,4,1};               //change to dynamic array then?
 /* Variables for 2G connection */
@@ -14,16 +15,16 @@ byte addresses[][6] = {"1Node","2Node"};
 /* data structure for the tranmission */
 //unsigned long msg;
 const byte NodeID = 0;                      //Node ID for home station
-float NodeData = 0;
+float NodeData = 9999999;                   //Home_node.NodeData = time sleep for low power mode.
 const int Max_Nodes = 20;
 
 typedef struct {
-  byte ID; //Node ID number
-  byte path [Max_Nodes]; //The path to go down    //up to 256 differnt node names only a path of 31
-  byte Place_In_Path; //Where in the array are we
-  byte cmd; //go to sleep, other odd commands
-  bool return_flag;//Return to home node, go from ++ to --
-  float sensor1;
+  byte ID;                                  //Node ID number
+  byte path [Max_Nodes];                    //The path to go down    //up to 256 differnt node names only a path of 31
+  byte Place_In_Path;                       //Where in the array are we
+  byte cmd;                                 //go to sleep, other odd commands
+  bool return_flag;                         //Return to home node, go from ++ to --
+  float sensor1;                            //set time for sleep (shared by HOME + OPNODE)
 }MsgData;
 
   MsgData My_Data;
@@ -41,6 +42,9 @@ int count=0;
 unsigned long start_time;
 bool old_Data=true;
 
+/* variable for sleep state, flag*/
+int8_t POST_done_flag = 0;
+
 
 void setup() {
   /* Set up 2G network here*/
@@ -52,7 +56,7 @@ void setup() {
     _clear_data_struct();
      My_Data.Place_In_Path=1;               //CHANNGEE ----------------------------------??
 
-    My_Data.sensor1 = NodeData;
+    My_Data.sensor1 = NodeData;             //sleep time for low-power mode. Sent out to Op-Node to make sure compatibility
     Serial.begin(9600);
     radio.begin();
     radio.setAutoAck(false);
@@ -103,14 +107,14 @@ void loop() {
       else {
         //Tim+Steve transmission
         //zero_out path
-        Post_Http_request();
+        Post_HTTP_request();
       } */
       connect_GPRS();
       memset(reading, 0, sizeof(reading));
 
-      /* fake reading */
+      /* fake reading -------------------------------------------- CHANGE me when the web is done*/
       for(i=1; i<6; i++) {
-        reading[i-1] = 0;
+        reading[i-1] = i;
       }
       Submit_HTTP_request();
       Serial.println("read the website");
@@ -123,7 +127,17 @@ void loop() {
       }
 
       /*POST data to website*/
-      Post_Http_request();
+      while( POST_done_flag == 0 ) {
+        Post_HTTP_request();
+        Submit_HTTP_request();
+        POST_done_flag = 1;               // ---------------------- ASK Webteam to construct the value once they get the data
+      }
+
+      power_off();
+      My_Data.cmd = 1;                    // sleep command
+      My_Data.sensor1 = NodeData;
+
+      
       //if (flag == 1) continue; else ....
     }
     return;
@@ -165,6 +179,11 @@ void power_cycle() {
   delay(3000);
 }
 
+void power_off() {
+    client_2G.println("AT+HTTPTERM");        //terminate the HTTP, cause POWER RESET ----------------- CAUTION
+    delay(1000);
+    ShowSerialData();
+}
 void connect_GPRS() {
  client_2G.println("AT+CSQ");                                 //Check signal quality
     delay(100);
@@ -197,11 +216,11 @@ void Submit_HTTP_request() {
     ShowSerialData();
   
   //this is a modification to obtain path from api
-  client_2G.println("AT+HTTPPARA=\"URL\",\"http://sensorweb.ece.iastate.edu/api/4/path\"");//Public server IP address
+  client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://sensorweb.ece.iastate.edu/api/4/path\"");//Public server IP address
     delay(1000);
     ShowSerialData();
 
-  client_2G.println("AT+HTTPPARA=\"CID\",1");      //http://sensorweb.ece.iastate.edu/api/4/path
+  client_2G.println("AT+HTTPPARA=\"CID\",1");      //HTTP://sensorweb.ece.iastate.edu/api/4/path
     delay(1000);
     ShowSerialData();
 
@@ -217,7 +236,7 @@ void Submit_HTTP_request() {
 }
 
 
-void Post_Http_request()
+void Post_HTTP_request()
 {
   /* this function specifically extract only the path and not the other response retrieved from
   HTTPREAD response
@@ -228,7 +247,7 @@ void Post_Http_request()
     delay(2000);
     ShowSerialData();
   
-  client_2G.println("AT+HTTPPARA=\"URL\",\"http://posttestserver.com/post.php?dir=Homenodetestiastate\"");//Public server IP address
+  client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://posttestserver.com/post.php?dir=Homenodetestiastate\"");//Public server IP address
     delay(1000);
     ShowSerialData();
 
@@ -255,6 +274,8 @@ void _CastString_to_Int_Array() {
 
   return;
 }
+
+
 void serial_logger(){
     Serial.println("enter serial_logger");
     //clear path
