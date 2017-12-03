@@ -4,6 +4,11 @@
 #include "LowPower.h"
 
 char reading[] = {5,3,2,4,1};               //change to dynamic array then?
+byte readingHold[46];   //this would hold the response of the AT+HTTPREAD  
+byte readingHold2[11];  //This contains only the data which is the path e.g[5,4,3,2,1]
+byte readingHold3[11];  //This would hold the value of the path recieved from the api
+byte final_path[11];
+
 /* Variables for 2G connection */
 SoftwareSerial client_2G(7,8);             //2G network pin 7:Rx (CE), pin 8(CSN): Tx, pin 9: power Up/Down for SW reset
 
@@ -15,7 +20,7 @@ byte addresses[][6] = {"1Node","2Node"};
 /* data structure for the tranmission */
 //unsigned long msg;
 const byte NodeID = 0;                      //Node ID for home station
-float NodeData = 9999999;                   //Home_node.NodeData = time sleep for low power mode.
+float NodeData = 2;                   //Home_node.NodeData = time sleep for low power mode.
 const int Max_Nodes = 20;
 
 typedef struct {
@@ -118,6 +123,10 @@ void loop() {
       }
       Submit_HTTP_request();
       Serial.println("read the website");
+      Serial.println("check it out the path");
+      for (i=0; i<sizeof(readingHold[2]); i++) {
+        Serial.print(readingHold[2]); Serial.print(" ");
+      }
       /* Need to check the condition, cannot exit when reading =0 */
       if(reading[0] == 0) {
         continue;         //never
@@ -127,16 +136,22 @@ void loop() {
       }
 
       /*POST data to website*/
+      Serial.println("POST data to web");
       while( POST_done_flag == 0 ) {
         Post_HTTP_request();
         Submit_HTTP_request();            // confirmation flag that data is sent successfully to web. ASK WEBTEAM to design a flag-return
         POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
       }
-      power_off();
+      power_on();
       My_Data.cmd = 1;                    // sleep command
       My_Data.sensor1 = NodeData;         // sleep time. Should be reasonable
 
       serial_logger();                    //passing sleep command to all Sensor node.
+      delay(1000);
+      
+      /* sleep mode */
+      Serial.println("Enter sleep mode zzzzzzzzzzzzzzzzz");
+      delay(500);
       if ( My_Data.cmd = 1 ) {
         for(i=0; i<NodeData; i++){
           LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, 
@@ -159,17 +174,6 @@ void loop() {
   }
 }
 
-void ShowSerialData() {
-
-  int8_t w = 0;
-  while( client_2G.available() != 0)
-    Serial.write( client_2G.read() );
-    reading[w] = client_2G.read();
-    delay(100);
-    i++;
-    
-}
-
 /**
  * Software reset: re-initilize 2G module (solder JP for pin9)
  * This will be executed if there 2G cellular link lost connectivity
@@ -183,7 +187,7 @@ void power_on() {
   digitalWrite(9, HIGH);
   delay(2000);
 
-  digitalWrite(9, LOW);
+  digitalWrite(9, LOW);                                   //This turn off the 2G module
   delay(3000);
 }
 
@@ -192,6 +196,7 @@ void power_off() {
     delay(1000);
     ShowSerialData();
 }
+
 void connect_GPRS() {
  client_2G.println("AT+CSQ");                                 //Check signal quality
     delay(100);
@@ -239,10 +244,12 @@ void Submit_HTTP_request() {
   client_2G.println("AT+HTTPREAD");       //Send a command to read the HTTP server response, run AT+HTTPACTION in prior
     delay(300);
     ShowSerialData();
+    Reading_Path();
+    //_convert_Str_to_IntArray(readingHold[2]);
+    
   client_2G.println("");
     delay(100);         
 }
-
 
 void Post_HTTP_request()
 {
@@ -272,10 +279,21 @@ void Post_HTTP_request()
     delay(1000);
     ShowSerialData();
 
-
+/*
   client_2G.println("AT+HTTPTERM");        //terminate the HTTP, cause POWER RESET ----------------- CAUTION
     delay(1000);
-    ShowSerialData();
+    ShowSerialData(); */
+}
+
+void ShowSerialData() {
+
+  int8_t w = 0;
+  while( client_2G.available() != 0)
+    Serial.write( client_2G.read() );
+    reading[w] = client_2G.read();
+    delay(100);
+    i++;
+    
 }
 
 void _CastString_to_Int_Array() {
@@ -304,14 +322,7 @@ void serial_logger(){
 //        My_Data.path[1] = 1;     
 //      Serial.println(F("Calling node 1"));
 //   }
-//
-//    else if ( c == '2'){ 
-//        //path to 2
-//        My_Data.path[0] = 0;
-//        My_Data.path[1] = 1;
-//        My_Data.path[2] = 2;   
-//      Serial.println(F("Calling node 2"));
-//   }
+
 //     else{
 //    return;
 //   }
@@ -331,7 +342,7 @@ void serial_logger(){
      while(start_time+Timeout>millis()){
       receive();
      }
-  Serial.println("restart loop");
+  Serial.println("Complete Transceiver. Return loop");
 
 }
 
@@ -401,3 +412,48 @@ void _clear_data_struct() {
      My_Data.return_flag=0;
 }
 
+
+
+
+/* --------------------------------------- TEMP ----------------------- */
+void Reading_Path() {
+  i = 0;
+  while ( client_2G.available() ) {
+    readingHold[i] = byte(client_2G.read());
+    delay(100);
+    i++;
+  }
+
+  int m = 29;
+  Serial.println("original web data: ");
+  for (i=0; i<sizeof(readingHold); i++) {
+    //readingHold2[i] = readingHold[m];
+    Serial.print(readingHold[i]); 
+    m++; 
+  }
+
+  Serial.print("size of readingHold2"); Serial.println(sizeof(readingHold2));
+  for(i=0; i<sizeof(readingHold2); i++) {
+    Serial.print(readingHold2[i]); Serial.print(" , ");
+  }
+
+  for ( i=0; i<sizeof(readingHold2); i++) {
+    if (isDigit(readingHold2[i])) {
+      final_path[i] = readingHold2[i] - '0';      //Should use Int() to cast?
+      //received_path[k] = byte(readingHold[j]);
+      Serial.println(final_path[i]);
+    }
+  }
+}
+
+/*
+void _convert_Str_to_IntArray(byte path) {
+  for ( i=0; i<sizeof(path); i++) {
+    if (isDigit(path[i])) {
+      final_path[i] = path[i] - '0';      //Should use Int() to cast?
+      //received_path[k] = byte(readingHold[j]);
+      Serial.println(final_path[i]);
+    }
+  }
+}
+*/
