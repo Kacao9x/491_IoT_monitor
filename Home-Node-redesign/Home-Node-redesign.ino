@@ -6,8 +6,6 @@
 byte reading[6];               //change to dynamic array then?
 byte readingHold[46];   //this would hold the response of the AT+HTTPREAD
 byte readingHold2[11];  //This contains only the data which is the path e.g[5,4,3,2,1]
-byte readingHold3[11];  //This would hold the value of the path recieved from the api
-byte final_path[11];
 
 /* Variables for 2G connection */
 SoftwareSerial client_2G(7, 8);            //2G network pin 7:Rx (CE), pin 8(CSN): Tx, pin 9: power Up/Down for SW reset
@@ -40,12 +38,12 @@ MsgData Received_Data;
 //These can be altered Later by using Struct_name.Struct_access
 
 int TransAMOUNT = 5;
-int DataTRANS = false;
+//int DataTRANS = false;
 int i;
 unsigned long Timeout = 5000;
-int count = 0;
+//int count = 0;
 unsigned long start_time;
-bool old_Data = true;
+//bool old_Data = true;
 
 /* variable for sleep state, flag*/
 int8_t POST_done_flag = 0;
@@ -101,12 +99,9 @@ void loop() {
         } */
       connect_GPRS();
       memset(reading, 0, sizeof(reading));
-
-      /* fake reading -------------------------------------------- CHANGE me when the web is done*/
-      //      for(i=1; i<6; i++) {
-      //        reading[i-1] = i;
-      //      }
       Submit_HTTP_request();
+
+      //Debugging 
       Serial.println("read the website");
       Serial.println("check it out the path");
       for (i = 0; i < sizeof(reading); i++) {
@@ -133,7 +128,7 @@ void loop() {
         Submit_HTTP_request();            // confirmation flag that data is sent successfully to web. ASK WEBTEAM to design a flag-return
         POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
       }
-      //power_on();
+      power_on();
       My_Data.cmd = 1;                    // sleep command
       My_Data.sensor1 = NodeData;         // sleep time. Should be reasonable
 
@@ -170,7 +165,7 @@ void loop() {
    This will be executed if there 2G cellular link lost connectivity
 */
 void power_on() {
-  Serial.println(" Software PowerUp ");
+  Serial.println(" Software PowerCycle ");
   pinMode(9, OUTPUT);
   digitalWrite(9, LOW);
   delay(1000);
@@ -182,11 +177,12 @@ void power_on() {
   delay(3000);
 }
 
+/*
 void power_off() {
   client_2G.println("AT+HTTPTERM");        //terminate the HTTP, cause POWER RESET ----------------- CAUTION
   delay(1000);
   ShowSerialData();
-}
+} */
 
 void connect_GPRS() {
   client_2G.println("AT+CSQ");                                 //Check signal quality
@@ -411,7 +407,7 @@ void Reading_Path() {
     delay(100);
     i++;
   }
-
+  
   /* Terver's idea: a temp solution for this problem. Not a generic to be used everywhere.*/
   int m = 29;
   for (i = 0; i < 11; i++)
@@ -443,9 +439,9 @@ void _convert_Str_to_IntArray(byte path[]) {
   Serial.println("final path: ");
   for ( i = 0; i < sizeof(path); i++) {
     if (isDigit(path[i])) {
-      final_path[i] = path[i] - '0';      //Should use Int() to cast?
+      reading[i] = path[i] - '0';      //Should use Int() to cast?
       //received_path[k] = byte(readingHold[j]);
-      Serial.println(final_path[i]);
+      Serial.println(reading[i]);
       delay(100);
     }
   }
