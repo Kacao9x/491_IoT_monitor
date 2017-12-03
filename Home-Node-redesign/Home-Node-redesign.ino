@@ -3,7 +3,7 @@
 #include "RF24.h"
 #include "LowPower.h"
 
-char reading[] = {5,3,2,4,1};               //change to dynamic array then?
+byte reading[6];               //change to dynamic array then?
 byte readingHold[46];   //this would hold the response of the AT+HTTPREAD  
 byte readingHold2[11];  //This contains only the data which is the path e.g[5,4,3,2,1]
 byte readingHold3[11];  //This would hold the value of the path recieved from the api
@@ -118,15 +118,13 @@ void loop() {
       memset(reading, 0, sizeof(reading));
 
       /* fake reading -------------------------------------------- CHANGE me when the web is done*/
-      for(i=1; i<6; i++) {
-        reading[i-1] = i;
-      }
+//      for(i=1; i<6; i++) {
+//        reading[i-1] = i;
+//      }
       Submit_HTTP_request();
       Serial.println("read the website");
       Serial.println("check it out the path");
-      for (i=0; i<sizeof(readingHold[2]); i++) {
-        Serial.print(readingHold[2]); Serial.print(" ");
-      }
+      
       /* Need to check the condition, cannot exit when reading =0 */
       if(reading[0] == 0) {
         continue;         //never
@@ -142,7 +140,7 @@ void loop() {
         Submit_HTTP_request();            // confirmation flag that data is sent successfully to web. ASK WEBTEAM to design a flag-return
         POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
       }
-      power_on();
+      //power_on();
       My_Data.cmd = 1;                    // sleep command
       My_Data.sensor1 = NodeData;         // sleep time. Should be reasonable
 
@@ -243,7 +241,7 @@ void Submit_HTTP_request() {
 
   client_2G.println("AT+HTTPREAD");       //Send a command to read the HTTP server response, run AT+HTTPACTION in prior
     delay(300);
-    ShowSerialData();
+    //ShowSerialData();
     Reading_Path();
     //_convert_Str_to_IntArray(readingHold[2]);
     
@@ -287,13 +285,9 @@ void Post_HTTP_request()
 
 void ShowSerialData() {
 
-  int8_t w = 0;
   while( client_2G.available() != 0)
     Serial.write( client_2G.read() );
-    reading[w] = client_2G.read();
     delay(100);
-    i++;
-    
 }
 
 void _CastString_to_Int_Array() {
@@ -424,36 +418,42 @@ void Reading_Path() {
     i++;
   }
 
+  /* Terver's idea: a temp solution for this problem. Not a generic to be used everywhere.*/
   int m = 29;
-  Serial.println("original web data: ");
-  for (i=0; i<sizeof(readingHold); i++) {
-    //readingHold2[i] = readingHold[m];
-    Serial.print(readingHold[i]); 
-    m++; 
-  }
-
-  Serial.print("size of readingHold2"); Serial.println(sizeof(readingHold2));
-  for(i=0; i<sizeof(readingHold2); i++) {
-    Serial.print(readingHold2[i]); Serial.print(" , ");
-  }
-
-  for ( i=0; i<sizeof(readingHold2); i++) {
+   for(i = 0;i<11;i++)
+   {
+      readingHold2[i] = readingHold[m]; //readingHold2 now contains the path which is stored as bytes
+      m+=1;
+   }
+   //_convert_Str_to_IntArray(readingHold2);    //no idea why we cannot parse byte array
+   Serial.println("final path: ");
+    for ( i=0; i<sizeof(readingHold2); i++) {
     if (isDigit(readingHold2[i])) {
-      final_path[i] = readingHold2[i] - '0';      //Should use Int() to cast?
-      //received_path[k] = byte(readingHold[j]);
-      Serial.println(final_path[i]);
+//      final_path[i] = readingHold2[i] - '0';      //Should use Int() to cast?
+//      Serial.println(final_path[i]);
+
+      reading[i] = readingHold2[i] - '0';
+      Serial.println(reading[i]);
+      delay(100);
     }
   }
+  
+  
+  /* generic capture the right path, but contain some extra '1' from somewhere */
+  //_convert_Str_to_IntArray();
 }
 
-/*
-void _convert_Str_to_IntArray(byte path) {
+
+void _convert_Str_to_IntArray(byte path[]) {
+  // works fine, but some extra '1' from somewhere 
+  Serial.println("final path: ");
   for ( i=0; i<sizeof(path); i++) {
     if (isDigit(path[i])) {
       final_path[i] = path[i] - '0';      //Should use Int() to cast?
       //received_path[k] = byte(readingHold[j]);
       Serial.println(final_path[i]);
+      delay(100);
     }
   }
 }
-*/
+
