@@ -77,7 +77,7 @@ void setup() {
 void loop() {
   /**
    * if 2G network available: wait for radio reception and perform duty
-   * else: power cycle by SW reset (power_cycle)
+   * else: power cycle by SW reset (power_on)
    */
   if( client_2G.available() ) {
     while( client_2G.available() ) {
@@ -129,22 +129,30 @@ void loop() {
       /*POST data to website*/
       while( POST_done_flag == 0 ) {
         Post_HTTP_request();
-        Submit_HTTP_request();
-        POST_done_flag = 1;               // ---------------------- ASK Webteam to construct the value once they get the data
+        Submit_HTTP_request();            // confirmation flag that data is sent successfully to web. ASK WEBTEAM to design a flag-return
+        POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
       }
-
       power_off();
       My_Data.cmd = 1;                    // sleep command
-      My_Data.sensor1 = NodeData;
+      My_Data.sensor1 = NodeData;         // sleep time. Should be reasonable
 
+      serial_logger();                    //passing sleep command to all Sensor node.
+      if ( My_Data.cmd = 1 ) {
+        for(i=0; i<NodeData; i++){
+          LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, 
+                SPI_OFF, USART0_OFF, TWI_OFF);
+          }
+      }
+
+      /* Sleep time is over, wake up*/
+      My_Data.cmd = 0;                    //zero out sleep cmd
       
-      //if (flag == 1) continue; else ....
     }
     return;
-  } else {  //perform power_cycle
+  } else {  //perform power_on
     //If no power at the beginning, works fine. But if mannually turn off, never back on???
     Serial.println(" Loop_no_Connected - power reset");
-    power_cycle();
+    power_on();
     delay(1000);
     //connect_GPRS();
     Serial.println("No need enable GPRS");                //Run once
@@ -166,7 +174,7 @@ void ShowSerialData() {
  * Software reset: re-initilize 2G module (solder JP for pin9)
  * This will be executed if there 2G cellular link lost connectivity
  */
-void power_cycle() {
+void power_on() {
   Serial.println(" Software PowerUp ");
   pinMode(9, OUTPUT);
   digitalWrite(9, LOW);
@@ -278,7 +286,7 @@ void _CastString_to_Int_Array() {
 
 void serial_logger(){
     Serial.println("enter serial_logger");
-    //clear path
+    //clear path                      // ------------------------------------------------- Do we accidentally clear data path here?
     _clear_data_struct();
      My_Data.Place_In_Path=1;         //CHANGE ME ---------------------??
 
