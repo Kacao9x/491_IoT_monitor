@@ -3,7 +3,14 @@
 #include "RF24.h"
 #include "LowPower.h"
 
-byte reading[6];               //change to dynamic array then?
+/* data structure for the tranmission */
+//unsigned long msg;
+const byte NodeID = 0;                      //Node ID for home station
+float NodeData = 2;                   //Home_node.NodeData = time sleep for low power mode.
+const int Max_Nodes = 20;
+byte reading_temp[Max_Nodes];
+byte reading[Max_Nodes];               //change to dynamic array then?
+
 byte readingHold[46];   //this would hold the response of the AT+HTTPREAD
 byte readingHold2[11];  //This contains only the data which is the path e.g[5,4,3,2,1]
 
@@ -14,12 +21,6 @@ SoftwareSerial client_2G(7, 8);            //2G network pin 7:Rx (CE), pin 8(CSN
 RF24 radio(2, 3);
 const uint64_t pipe = 0xE8E8F0F0E1LL; //channel to recieve
 byte addresses[][6] = {"1Node", "2Node"};
-
-/* data structure for the tranmission */
-//unsigned long msg;
-const byte NodeID = 0;                      //Node ID for home station
-float NodeData = 2;                   //Home_node.NodeData = time sleep for low power mode.
-const int Max_Nodes = 20;
 
 typedef struct {
   byte ID;                                  //Node ID number
@@ -67,14 +68,11 @@ void setup() {
   radio.startListening();
 
   /* Run once to go end-to-end */
-  connect_GPRS();
-  Submit_HTTP_request();
+  //connect_GPRS();
+  //Submit_HTTP_request();
   if (client_2G.println("AT+CSQ"))
     Serial.print("Connected_setup");
-  //  if( client_2G.available() )
-  //    Serial.print("Connected_setup");
-  //  else
-  //    Serial.print("NotConnected_setup");
+
 }
 
 void loop() {
@@ -88,30 +86,22 @@ void loop() {
       delay(1000);
       Serial.println(" POST something ");
 
-      /*
-        Submit_HTTP_request();
-        _CastString_to_Int_Array();
-        if (web_flag == 0) return;
-        else {
-        //Tim+Steve transmission
-        //zero_out path
-        Post_HTTP_request();
-        } */
       connect_GPRS();
       memset(reading, 0, sizeof(reading));
       Submit_HTTP_request();
 
       //Debugging 
       Serial.println("read the website");
-      Serial.println("check it out the path");
+      Serial.println("MAIN LOOP_check it out the path");
+      
       for (i = 0; i < sizeof(reading); i++) {
         Serial.print(reading[i]); Serial.print(" : ");
         delay(100);
       }
-      Serial.println("Get shit done. please run IF condition");
+      Serial.println(" ");
 
 
-      /* Need to check the condition, cannot exit when reading =0 */
+      /* Need to check the condition, cannot exit when reading =0 
       if (reading[0] == 0 && reading[1] == 0) {
         Serial.println("what the fuck??? How come you get in here");
         delay(1000);
@@ -119,8 +109,9 @@ void loop() {
       }
       else {
         serial_logger();
-      }
+      } */
 
+      serial_logger();
       /*POST data to website*/
       Serial.println("POST data to web");
       while ( POST_done_flag == 0 ) {
@@ -128,22 +119,27 @@ void loop() {
         Submit_HTTP_request();            // confirmation flag that data is sent successfully to web. ASK WEBTEAM to design a flag-return
         POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
       }
-      power_on();
+
+
+      /* Sleep command to the same array path */
+      //
       My_Data.cmd = 1;                    // sleep command
       My_Data.sensor1 = NodeData;         // sleep time. Should be reasonable
 
       serial_logger();                    //passing sleep command to all Sensor node.
       delay(1000);
-
       /* sleep mode */
+      
       Serial.println("Enter sleep mode zzzzzzzzzzzzzzzzz");
+      Serial.println("Disable the power off to save time demoing");
       delay(500);
-      if ( My_Data.cmd = 1 ) {
-        for (i = 0; i < NodeData; i++) {
-          LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF,
-                        SPI_OFF, USART0_OFF, TWI_OFF);
-        }
-      }
+//      power_cycle();
+//      if ( My_Data.cmd = 1 ) {
+//        for (i = 0; i < NodeData; i++) {
+//          LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF,
+//                        SPI_OFF, USART0_OFF, TWI_OFF);
+//        }
+//      }
 
       /* Sleep time is over, wake up*/
       My_Data.cmd = 0;                    //zero out sleep cmd
@@ -153,7 +149,7 @@ void loop() {
   } else {  //perform power_on
     //If no power at the beginning, works fine. But if mannually turn off, never back on???
     Serial.println(" Loop_no_Connected - power reset");
-    power_on();
+    power_cycle();
     delay(1000);
     //connect_GPRS();
     Serial.println("No need enable GPRS");                //Run once
@@ -164,7 +160,7 @@ void loop() {
    Software reset: re-initilize 2G module (solder JP for pin9)
    This will be executed if there 2G cellular link lost connectivity
 */
-void power_on() {
+void power_cycle() {
   Serial.println(" Software PowerCycle ");
   pinMode(9, OUTPUT);
   digitalWrite(9, LOW);
@@ -187,11 +183,11 @@ void power_off() {
 void connect_GPRS() {
   client_2G.println("AT+CSQ");                                 //Check signal quality
   delay(100);
-  ShowSerialData();
+  //ShowSerialData();
 
   client_2G.println("AT+CGATT?");                             //Attach or Detach from GPRS Support
   delay(100);
-  ShowSerialData();
+  //ShowSerialData();
 
   client_2G.println("AT+SAPBR=3,1,\"Contype\",\"GPRS\"");     //setting the SAPBR, the connection type is using gprs
   delay(1000);
@@ -199,11 +195,11 @@ void connect_GPRS() {
 
   client_2G.println("AT+SAPBR=3,1,\"APN\",\"TRACFONE-WFM\""); //setting the APN, Access point name string
   delay(4000);
-  ShowSerialData();
+  //ShowSerialData();
 
   client_2G.println("AT+SAPBR=1,1");                          //setting the SAPBR
   delay(2000);
-  ShowSerialData();
+  //ShowSerialData();
 
   //  client_2G.println("AT+SAPBR=2,1");
   //    delay(1000);
@@ -249,10 +245,11 @@ void Post_HTTP_request()
   delay(2000);
   ShowSerialData();
 
-  client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://posttestserver.com/post.php?dir=Homenodetestiastate\"");//Public server IP address
+  client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://sensorweb.ece.iastate.edu/api/homenode\"");//Public server IP address
   delay(1000);
   ShowSerialData();
 
+    //add ID number here
   client_2G.println("AT+HTTPPARA=\"CONTENT\",\"application/json"); //create the data structure in json format
   delay(1000);
   ShowSerialData();
@@ -292,9 +289,9 @@ void serial_logger() {
   My_Data.Place_In_Path = 1;       //CHANGE ME ---------------------??
 
   //reading[] = {5,3,2,4,1}; populate My_data.path[] by the array
-  for ( i = 0; i < sizeof(reading); i++) {
-    My_Data.path[i] = int( reading[i] );
-  }
+//  for ( i = 0; i < sizeof(reading); i++) {
+//    My_Data.path[i] = int( reading[i] );
+//  }
 
   //CHANGE ME
   //    int c = int(Serial.read());
@@ -309,9 +306,16 @@ void serial_logger() {
   //    return;
   //   }
 
-  Serial.print("print mydata struct: ");
-  for ( int8_t w = 0; w < sizeof(reading); w++) {
-    Serial.print(My_Data.path[w]);
+    reading_temp[0] = 0;
+    reading_temp[1] = 1;
+    reading_temp[2] = 2;
+    reading_temp[3] = 0;
+    for( i=0; i<Max_Nodes; i++) {
+        My_Data.path[i] = reading_temp[i];
+    }
+  Serial.print("Serial_logger_print mydata struct: ");
+  for ( int8_t i = 0; i < sizeof(reading_temp); i++) {
+    Serial.print(My_Data.path[i]);
   }
   delay(100);
   Serial.print("print sleep cmd flag: "); Serial.println(My_Data.cmd);
@@ -327,6 +331,11 @@ void serial_logger() {
     receive();
   }
   Serial.println("Complete Transceiver. Return loop");
+
+  /* Display data received*/
+  Serial.println(" $$$$$$$$  Display data received $$$$$$$$ ");
+  Serial.print("ID: "); Serial.println(Received_Data.sensor1);
+  Serial.print("value: "); Serial.println(Received_Data.sensor1);
 
 }
 
@@ -402,28 +411,34 @@ void _clear_data_struct() {
 /* --------------------------------------- TEMP ----------------------- */
 void Reading_Path() {
   i = 0;
+  Serial.println(" value from readingHold");
   while ( client_2G.available() ) {
     readingHold[i] = byte(client_2G.read());
+    Serial.print(readingHold[i]); Serial.print(":");
     delay(100);
     i++;
   }
-  
+
   /* Terver's idea: a temp solution for this problem. Not a generic to be used everywhere.*/
+  memset(readingHold2, 0, sizeof(readingHold2));
   int m = 29;
-  for (i = 0; i < 11; i++)
+  Serial.println(" ");
+  Serial.println(" debugging reading path ----------------------");
+  for (i = 0; i < Max_Nodes; i++)
   {
     readingHold2[i] = readingHold[m]; //readingHold2 now contains the path which is stored as bytes
+    Serial.print(readingHold[2]); Serial.print(" : ");
     m += 1;
   }
+  
   //_convert_Str_to_IntArray(readingHold2);    //no idea why we cannot parse byte array
-  Serial.println("final path: ");
+  Serial.println("final path from casting: ");
   for ( i = 0; i < sizeof(readingHold2); i++) {
-    if (isDigit(readingHold2[i])) {
-      //      final_path[i] = readingHold2[i] - '0';      //Should use Int() to cast?
-      //      Serial.println(final_path[i]);
-
-      reading[i] = readingHold2[i] - '0';
+    if (isDigit(readingHold[i])) {
+      reading[i] = readingHold[i] - '0';
+      //reading[i] = byte(readingHold2[i]);
       Serial.println(reading[i]);
+      //var=reading[i];
       delay(100);
     }
   }
@@ -436,11 +451,11 @@ void Reading_Path() {
 
 void _convert_Str_to_IntArray(byte path[]) {
   // works fine, but some extra '1' from somewhere
-  Serial.println("final path: ");
+  Serial.println("Final path read from casting: ");
   for ( i = 0; i < sizeof(path); i++) {
     if (isDigit(path[i])) {
       reading[i] = path[i] - '0';      //Should use Int() to cast?
-      //received_path[k] = byte(readingHold[j]);
+      //reading[i] = byte(path[i]);
       Serial.println(reading[i]);
       delay(100);
     }
