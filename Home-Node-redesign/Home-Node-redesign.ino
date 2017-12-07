@@ -19,10 +19,10 @@ byte readingHold3[Max_Nodes];               //This contains the final path to co
 String sensor_value;
 
 /* Json template to populate the sensor value */
-String readx0 = "{\"leafnodes\":[{";
+String readx0 = "[{";
 String readx1 = " \"id\": ";
 String readx2 = " \"value\": ";
-String readx3 = "}]}";
+String readx3 = "}]";
 String jsonString ="";
 //String failedNode = readx0 + readx1 +  nodeID + "\":" + "ERROR" + "\"" + "603" + "\"}";
 
@@ -84,9 +84,9 @@ void setup() {
     My_Data.sensor1 = NodeData;             //sleep time for low-power mode. Sent out to Op-Node to make sure compatibility
 
   /* Run once to go end-to-end */
-  connect_GPRS();
-  connect_HTTP();
-  Submit_HTTP_request();
+  //connect_GPRS();
+  //connect_HTTP();
+  //Submit_HTTP_request();
   Serial.println(" \n\n--------- Setup complete ---------- \n\n");
 }
 
@@ -271,6 +271,7 @@ void Post_HTTP_request() {
 //      ShowSerialData();
   connect_HTTP();
 
+  client_2G.println("AT+HTTPPARA=\"URL\",\"http://sensorweb.ece.iastate.edu/api/homenodes/2\"");//Public server IP address where the data would be posted
   client_2G.println("AT+HTTPPARA=\"URL\",\"http://sensorweb.ece.iastate.edu/api/homenodes/2\"");//Public server IP address where the data would be posted
   //client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://posttestserver.com/post.php?dir=Homenodetestiastate1\"");//Public server IP address
       delay(1000);
