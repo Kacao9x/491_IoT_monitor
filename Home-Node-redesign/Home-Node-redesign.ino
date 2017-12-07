@@ -6,14 +6,27 @@
 /* data structure for the tranmission */
 //unsigned long msg;
 const byte NodeID = 0;                      //Node ID for home station
-float NodeData = 3;                         //Home_node.NodeData = time sleep for low power mode.
+float NodeData = 5;                         //Home_node.NodeData = time sleep for low power mode.
 const int Max_Nodes = 20;
 //byte reading_temp[Max_Nodes];
 //byte reading[Max_Nodes];                    //change to dynamic array then?
 
+/* temp value to encapsulate the byte value from Op-Nodes */
 byte readingHold[46];                       //this would hold the response of the AT+HTTPREAD
 byte readingHold2[Max_Nodes];               //This contains only the data which is the path e.g[5,4,3,2,1]
 byte readingHold3[Max_Nodes];               //This contains the final path to copy to My_Data.path[ ]    
+
+String sensor_value;
+
+/* Json template to populate the sensor value */
+String readx0 = "{\"leafnodes\":[{";
+String readx1 = " \"id\": ";
+String readx2 = " \"value\": ";
+String readx3 = "}]}";
+String jsonString ="";
+//String failedNode = readx0 + readx1 +  nodeID + "\":" + "ERROR" + "\"" + "603" + "\"}";
+
+
 
 /* Variables for 2G connection */
 SoftwareSerial client_2G(7, 8);             //2G network pin 7:Rx (CE), pin 8(CSN): Tx, pin 9: power Up/Down for SW reset
@@ -66,11 +79,14 @@ void setup() {
 
   /* init variable */
     _clear_data_struct();
+    memset(readingHold2, 0, sizeof(readingHold2));            //zero-out the array before being populated
+    memset(readingHold, 0, sizeof(readingHold));              //zero-out the array before being populated
     My_Data.sensor1 = NodeData;             //sleep time for low-power mode. Sent out to Op-Node to make sure compatibility
 
   /* Run once to go end-to-end */
   connect_GPRS();
-  //Submit_HTTP_request();
+  connect_HTTP();
+  Submit_HTTP_request();
   Serial.println(" \n\n--------- Setup complete ---------- \n\n");
 }
 
@@ -79,18 +95,23 @@ void loop() {
      if 2G network available: wait for radio reception and perform duty
      else: power cycle by SW reset (power_on)
   */
+  My_Data.cmd = 0;                    //zero out sleep cmd
   if ( client_2G.available() ) {
     while ( client_2G.available() ) {
       Serial.println("loop_Connected");
       delay(1000);
       Serial.println(" POST something ");
 
+      _clear_data_struct();
+      memset(readingHold2, 0, sizeof(readingHold2));            //zero-out the array before being populated
+      memset(readingHold, 0, sizeof(readingHold));              //zero-out the array before being populated
       connect_GPRS();
 
       /* Read the path from website */
       Serial.println("read the website");
       Submit_HTTP_request();                                    //Read path from the website
-
+        //sensor_value = String(Received_Data.sensor1);
+      
       //Debugging 
       Serial.println("MAIN LOOP_check it out the path");
 
@@ -115,7 +136,7 @@ void loop() {
       while ( POST_done_flag == 0 ) {
         Post_HTTP_request();              //relay the sensor datas to webserver
         delay(1000);
-        Submit_HTTP_request();            // reading the confirm flag indicating that data is sent successfully to web. ASK WEBTEAM to design a flag-return
+        Submit_HTTP_request();            // NEW LINK: reading the confirm flag indicating that data is sent successfully to web. ASK WEBTEAM to design a flag-return
         POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
       }
 
@@ -130,9 +151,9 @@ void loop() {
       
       /* sleep mode */ 
       Serial.println("Enter sleep mode zzzzzzzzzzzzzzzzz");
-      power_cycle();                      //turn off 2G module
       delay(10000);
       if ( My_Data.cmd = 1 ) {
+        power_cycle();                      //turn off 2G module
         for (i = 0; i < NodeData; i++) {
           LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF,
                         SPI_OFF, USART0_OFF, TWI_OFF);
@@ -212,19 +233,19 @@ void Submit_HTTP_request() {
   client_2G.println("AT+HTTPINIT");           //init the HTTP request
   delay(1000);
   ShowSerialData();
-//
-//  client_2G.println("AT+HTTPPARA=\"CID\",1");      //HTTP://sensorweb.ece.iastate.edu/api/4/path
-//  delay(1000);
-//  ShowSerialData();
+
+  client_2G.println("AT+HTTPPARA=\"CID\",1");      //HTTP://sensorweb.ece.iastate.edu/api/4/path
+  delay(1000);
+  ShowSerialData();
 
   //this is a modification to obtain path from api
   client_2G.println("AT+HTTPPARA=\"URL\",\"http://sensorweb.ece.iastate.edu/api/2/path\"");//Public server IP address
   delay(1000);
   ShowSerialData();
 
-  client_2G.println("AT+HTTPPARA=\"CID\",1");      //HTTP://sensorweb.ece.iastate.edu/api/4/path
-  delay(1000);
-  ShowSerialData();
+//  client_2G.println("AT+HTTPPARA=\"CID\",1");      //HTTP://sensorweb.ece.iastate.edu/api/4/path
+//  delay(1000);
+//  ShowSerialData();
 
   client_2G.println("AT+HTTPACTION=0");    //=0 (READ), =1 (POST)
   delay(6000);
@@ -237,46 +258,58 @@ void Submit_HTTP_request() {
   client_2G.println("");
   delay(100);
 }
-void Post_HTTP_request()
-{
+void Post_HTTP_request() {
   /* this function specifically extract only the path and not the other response retrieved from
     HTTPREAD response
     Reading and extracting the desired path from the api end here*/
 
   /* make a post to the server with sensor value */
-  client_2G.println("AT+HTTPINIT");           //init the HTTP request
-  delay(1000);
-  ShowSerialData();
+  jsonString = readx0 + readx1 + String(Received_Data.ID) + "," + readx2 + String(Received_Data.sensor1) + readx3;
+  
+//  client_2G.println("AT+HTTPINIT");           //init the HTTP request
+//      delay(1000);
+//      ShowSerialData();
+  connect_HTTP();
 
-  //client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://sensorweb.ece.iastate.edu/api/homenode\"");//Public server IP address
-  client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://posttestserver.com/post.php?dir=Homenodetestiastate1\"");//Public server IP address
-  delay(1000);
-  ShowSerialData();
+  client_2G.println("AT+HTTPPARA=\"URL\",\"http://sensorweb.ece.iastate.edu/api/homenodes/2\"");//Public server IP address where the data would be posted
+  //client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://posttestserver.com/post.php?dir=Homenodetestiastate1\"");//Public server IP address
+      delay(1000);
+      ShowSerialData();
 
     //add ID number here
   client_2G.println("AT+HTTPPARA=\"CONTENT\",\"application/json"); //create the data structure in json format
-  delay(1000);
-  ShowSerialData();
-
-
-  client_2G.println("AT+HTTPDATA=" + String(sizeof(readingHold2)) + ",100000"); //insert data into the json format
-  delay(1000);
-  ShowSerialData();
-
-  client_2G.println("AT+HTTPACTION=1");    //=0 (READ), =1 (POST)
-  delay(1000);
-  ShowSerialData();
-
-    client_2G.println("AT+HTTPTERM");        //terminate the HTTP, cause POWER RESET ----------------- CAUTION
       delay(1000);
       ShowSerialData();
+
+
+  client_2G.println("AT+HTTPDATA=" + String(jsonString.length()) + ",100000"); //insert data into the json format
+      delay(1000);
+      ShowSerialData();
+
+  client_2G.println(jsonString);
+      delay(1000);
+      ShowSerialData;
+
+  client_2G.println("AT+HTTPACTION=1");    //=0 (READ), =1 (POST)
+      delay(1000);
+      ShowSerialData();
+
+  client_2G.println("AT+HTTPREAD");
+      delay(1000);
+      ShowSerialData();
+
+  client_2G.println("AT+HTTPTERM");        //terminate the HTTP, cause POWER RESET ----------------- CAUTION
+      delay(1000);
+      ShowSerialData();
+  Serial.println(jsonString);
 }
 
 void ShowSerialData() {
 
-  while ( client_2G.available() != 0)
+  while ( client_2G.available() != 0) {
     Serial.write( client_2G.read() );
-  delay(100);
+    delay(100);
+  }
 }
 
 
@@ -313,8 +346,12 @@ void serial_logger() {
   while (start_time + Timeout > millis()) {
     receive();
   }
+
+    /* save the value to populate JSON format*/
+  
   Serial.println("Complete Transceiver. Return loop");
 
+  
   /* Display data received*/
   Serial.println(" $$$$$$$$  Display data received $$$$$$$$ ");
   Serial.print("ID: "); Serial.println(Received_Data.sensor1);
@@ -387,6 +424,8 @@ void _clear_data_struct() {
   }
   My_Data.return_flag = 0;
   My_Data.Place_In_Path = 1;
+
+  memset(readingHold3, 0, sizeof(readingHold3));            //zero-out the array before being populated
 }
 
 
@@ -412,13 +451,6 @@ void Reading_Path() {
         readingHold2[i] = readingHold[m];
         m++;
     }
-    
-  Serial.println(" \ndebugging reading path: readingHold2 ----------------------");
-  for (i = 0; i < sizeof(readingHold2); i++)
-  {
-    Serial.print(readingHold[2]); Serial.print(":");
-  }
-
     //pathToSend();         // No idea why this function doesn't work here.
 
   /* generic capture the right path, but contain some extra '1' from somewhere */
