@@ -84,9 +84,9 @@ void setup() {
     My_Data.sensor1 = NodeData;             //sleep time for low-power mode. Sent out to Op-Node to make sure compatibility
 
   /* Run once to go end-to-end */
-  connect_GPRS();
-  connect_HTTP();
-  Submit_HTTP_request();
+  //connect_GPRS();
+  //connect_HTTP();
+  //Submit_HTTP_request();
   Serial.println(" \n\n--------- Setup complete ---------- \n\n");
 }
 
@@ -151,6 +151,13 @@ void loop() {
 //        Submit_HTTP_request();            // NEW LINK: reading the confirm flag indicating that data is sent successfully to web. ASK WEBTEAM to design a flag-return
 //        POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
 //      }
+      while ( POST_done_flag == 0 ) {
+        Post_HTTP_request();              //relay the sensor datas to webserver
+        delay(500);
+        Submit_HTTP_request();            // NEW LINK: reading the confirm flag indicating that data is sent successfully to web. ASK WEBTEAM to design a flag-return
+        POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
+      }
+
 
       
       /* Sleep command to the same array path */
@@ -162,6 +169,7 @@ void loop() {
       serial_logger();                    //passing sleep command to all Sensor node.
       if (My_Data.cmd)
         serial_logger();
+
       delay(500);
       
       /* sleep mode */ 
@@ -223,11 +231,11 @@ void connect_GPRS() {
   ShowSerialData();
 
   client_2G.println("AT+SAPBR=3,1,\"APN\",\"TRACFONE-WFM\""); //setting the APN, Access point name string
-  delay(1000);
+  delay(500);
   //ShowSerialData();
 
   client_2G.println("AT+SAPBR=1,1");                          //setting the SAPBR
-  delay(1000);
+  delay(500);
   //ShowSerialData();
 
   //  client_2G.println("AT+SAPBR=2,1");
@@ -294,16 +302,16 @@ void Post_HTTP_request() {
 
     //add ID number here
   client_2G.println("AT+HTTPPARA=\"CONTENT\",\"application/json"); //create the data structure in json format
-      delay(1000);
+      delay(500);
       ShowSerialData();
 
 
   client_2G.println("AT+HTTPDATA=" + String(jsonString.length()) + ",100000"); //insert data into the json format
-      delay(1000);
+      delay(100);
       ShowSerialData();
 
   client_2G.println(jsonString);
-      delay(500);
+      delay(100);
       ShowSerialData;
 
   client_2G.println("AT+HTTPACTION=1");    //=0 (READ), =1 (POST)
@@ -311,7 +319,7 @@ void Post_HTTP_request() {
       ShowSerialData();
 
   client_2G.println("AT+HTTPREAD");
-      delay(500);
+      delay(100);f
       ShowSerialData();
 
   client_2G.println("AT+HTTPTERM");        //terminate the HTTP, cause POWER RESET ----------------- CAUTION
@@ -366,8 +374,10 @@ void serial_logger() {
   
   /* Display data received*/
   Serial.println(" $$$$$$$$  Display data received $$$$$$$$ ");
-  Serial.print("ID: "); Serial.println(Received_Data.sensor1);
-  Serial.print("value: "); Serial.println(Received_Data.sensor1);
+//  Serial.print("ID: "); Serial.println(Received_Data.sensor1);
+//  Serial.print("value: "); Serial.println(Received_Data.sensor1);
+  Serial.print("ID: "); Serial.println("2.0");
+  Serial.print("value: "); Serial.println("2.22");
 
 }
 
