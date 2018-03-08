@@ -19,10 +19,10 @@ byte readingHold3[Max_Nodes];               //This contains the final path to co
 String sensor_value;
 
 /* Json template to populate the sensor value */
-String readx0 = "{\"leafnodes\":[{";
+String readx0 = "[{";
 String readx1 = " \"id\": ";
 String readx2 = " \"value\": ";
-String readx3 = "}]}";
+String readx3 = "}]";
 String jsonString ="";
 //String failedNode = readx0 + readx1 +  nodeID + "\":" + "ERROR" + "\"" + "603" + "\"}";
 
@@ -58,7 +58,7 @@ int i;
 unsigned long Timeout = 5000;
 //int count = 0;
 unsigned long start_time;
-//bool old_Data = true;
+bool old_Data = false;
 
 /* variable for sleep state, flag*/
 int8_t POST_done_flag = 0;
@@ -99,7 +99,7 @@ void loop() {
   if ( client_2G.available() ) {
     while ( client_2G.available() ) {
       Serial.println("loop_Connected");
-      delay(1000);
+      delay(500);
       Serial.println(" POST something ");
 
       _clear_data_struct();
@@ -120,11 +120,13 @@ void loop() {
       //value = Received_Data.sensor1;
         if( (Received_Data.path[Received_Data.Place_In_Path] == 0) ) {
             Serial.print("Data received from Serial log");Serial.print(Received_Data.ID);Serial.print(", ");Serial.println(Received_Data.sensor1);
+            old_Data = true;
         }
+        
       /* Need to check the condition, cannot exit when reading =0 
       if (reading[0] == 0 && reading[1] == 0) {
         Serial.println("what the fuck??? How come you get in here");
-        delay(1000);
+        delay(500);
         continue;         //never
       }
       else {
@@ -132,26 +134,39 @@ void loop() {
       } */
       
       /*POST data to website*/
+      Post_HTTP_request();
+      Serial.println("relay data next node 2: ");
+      delay(500);
+      if (old_Data) {
+            Serial.println("relay data next node 1: ");
+            serial_logger();
+            Post_HTTP_request();
+            old_Data = false;
+            POST_done_flag = 1;
+        }
       Serial.println("POST data to web");
-      while ( POST_done_flag == 0 ) {
-        Post_HTTP_request();              //relay the sensor datas to webserver
-        delay(1000);
-        Submit_HTTP_request();            // NEW LINK: reading the confirm flag indicating that data is sent successfully to web. ASK WEBTEAM to design a flag-return
-        POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
-      }
+//      while ( POST_done_flag == 0 && old_Data != false) {
+//        Post_HTTP_request();              //relay the sensor datas to webserver
+//        delay(500);
+//        Submit_HTTP_request();            // NEW LINK: reading the confirm flag indicating that data is sent successfully to web. ASK WEBTEAM to design a flag-return
+//        POST_done_flag = 1;               // ---------------------- dummy value until Webteam get that done.
+//      }
 
-
+      
       /* Sleep command to the same array path */
       //
       My_Data.cmd = 1;                    // sleep command
       My_Data.sensor1 = NodeData;         // sleep time. Should be reasonable
-
+      Serial.println("send sleep cmd to leaf node");
+      
       serial_logger();                    //passing sleep command to all Sensor node.
-      delay(1000);
+      if (My_Data.cmd)
+        serial_logger();
+      delay(500);
       
       /* sleep mode */ 
       Serial.println("Enter sleep mode zzzzzzzzzzzzzzzzz");
-      delay(10000);
+      delay(1000);
       if ( My_Data.cmd = 1 ) {
         power_cycle();                      //turn off 2G module
         for (i = 0; i < NodeData; i++) {
@@ -170,7 +185,7 @@ void loop() {
     Serial.println( client_2G.available() );
     Serial.println(" \nLoop_no_Connected - power reset");
     power_cycle();                      //If module is off, turn ON
-    delay(1000);
+    delay(500);
     //connect_GPRS();                     //No need GPRS setup here?
     Serial.println("---- complete power cycle - go back to loop -----\n\n\n");                //Run once
   }
@@ -204,7 +219,7 @@ void connect_GPRS() {
   //ShowSerialData();
 
   client_2G.println("AT+SAPBR=3,1,\"Contype\",\"GPRS\"");     //setting the SAPBR, the connection type is using gprs
-  delay(1000);
+  delay(500);
   ShowSerialData();
 
   client_2G.println("AT+SAPBR=3,1,\"APN\",\"TRACFONE-WFM\""); //setting the APN, Access point name string
@@ -225,17 +240,17 @@ void connect_HTTP() {
     ShowSerialData();
 
   client_2G.println("AT+HTTPPARA=\"CID\",1");
-    delay(1000);
+    delay(500);
     ShowSerialData();
 
 }
 void Submit_HTTP_request() {
   client_2G.println("AT+HTTPINIT");           //init the HTTP request
-  delay(1000);
+  delay(500);
   ShowSerialData();
 
   client_2G.println("AT+HTTPPARA=\"CID\",1");      //HTTP://sensorweb.ece.iastate.edu/api/4/path
-  delay(1000);
+  delay(500);
   ShowSerialData();
 
   //this is a modification to obtain path from api
@@ -272,8 +287,9 @@ void Post_HTTP_request() {
   connect_HTTP();
 
   client_2G.println("AT+HTTPPARA=\"URL\",\"http://sensorweb.ece.iastate.edu/api/homenodes/2\"");//Public server IP address where the data would be posted
+  client_2G.println("AT+HTTPPARA=\"URL\",\"http://sensorweb.ece.iastate.edu/api/homenodes/2\"");//Public server IP address where the data would be posted
   //client_2G.println("AT+HTTPPARA=\"URL\",\"HTTP://posttestserver.com/post.php?dir=Homenodetestiastate1\"");//Public server IP address
-      delay(1000);
+      delay(6000);
       ShowSerialData();
 
     //add ID number here
@@ -287,7 +303,7 @@ void Post_HTTP_request() {
       ShowSerialData();
 
   client_2G.println(jsonString);
-      delay(1000);
+      delay(500);
       ShowSerialData;
 
   client_2G.println("AT+HTTPACTION=1");    //=0 (READ), =1 (POST)
@@ -295,11 +311,11 @@ void Post_HTTP_request() {
       ShowSerialData();
 
   client_2G.println("AT+HTTPREAD");
-      delay(1000);
+      delay(500);
       ShowSerialData();
 
   client_2G.println("AT+HTTPTERM");        //terminate the HTTP, cause POWER RESET ----------------- CAUTION
-      delay(1000);
+      delay(500);
       ShowSerialData();
   Serial.println(jsonString);
 }
@@ -318,15 +334,6 @@ void serial_logger() {
   //clear path
   _clear_data_struct();
 
-//-------------------- TEMP test
-//    reading_temp[0] = 0;
-//    reading_temp[1] = 1;
-//    reading_temp[2] = 2;
-//    reading_temp[3] = 0;
-//    for( i=0; i<Max_Nodes; i++) {
-//        My_Data.path[i] = reading[i];
-//    }
-
     pathToSend();
     
   Serial.print("Serial_logger_print mydata struct: ");
@@ -338,6 +345,11 @@ void serial_logger() {
   Serial.println("\n");
   Serial.println("-------------");
 
+
+    /* continue to send out the new path */
+    if( old_Data || My_Data.cmd)
+        My_Data.path[2] = 0;
+    else {}
   transmit(My_Data);
   //RECIEVE
   delay(20);
@@ -365,6 +377,8 @@ void receive() {                                                            //Re
   radio.startListening();
   if (radio.available()) {
     radio.read(&Received_Data, sizeof(MsgData));  //byte value
+
+    
     /*
       Serial.println("\nRecieved Data");
 
